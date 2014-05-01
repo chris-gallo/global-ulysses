@@ -23,14 +23,20 @@ var episodeNumbers = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
 d3.json("world-110m2.json", function(error, topology) {
 
 
+  //load in the complete data for every mention
+  //this is bad because it declares a global variable
+  d3.csv("newest.csv", function(error, data){
+    fullData = data
+  });
+
   // load and display the cities
-  d3.csv("newest.csv", function(error, data) {
+  d3.csv("uniquelocals.csv", function(error, data) {
 
     //set up the city scale
     var cityScale = d3.scale.linear()
                     .domain([d3.min(data, function(d) {return d.Locality_Count}), 
                              d3.max(data, function(d) {return d.Locality_Count})])
-                    .range([2,5]);
+                    .range([3,6]);
 
 
     //plot the cities
@@ -48,8 +54,9 @@ d3.json("world-110m2.json", function(error, topology) {
         .attr("stroke", "black")
         .attr("shape-rendering", "auto")
         .on("click", function(d){  //update the table with info about the clicked locality
-          var filterTerm = d.LOCALITY;
-          updateTable()
+          filterTerm = d.LOCALITY; //global variable --- BAD
+          console.log(filterTerm)
+          updateTable(filterTerm)
         });
 
     // zoom, pan, and city resize
@@ -65,19 +72,34 @@ d3.json("world-110m2.json", function(error, topology) {
                 .attr("d", path.projection(projection)); 
         });
 
-    var  updateTable = function(){
-      var rows =  d3.select("tbody").selectAll("tr")
-                    .data(data);
-                    //.filter(function(d, i){return d.LOCALITY === this.LOCALITY});
+    //function to update the table beneath the map
+    var  updateTable = function(filterTerm){
+      var tableData = fullData.filter(function(el){return el.LOCALITY == filterTerm;}); //this relies on filterTerm being a global variable
+      
+      var rows = d3.select("tbody").selectAll("tr")
+                   .data(tableData);
 
       rows.enter()
-          .append("tr")
-          .text(d.LOCALITY);
-      }
+          .append("tr");
 
+      var cells = rows.selectAll("td")
+                      .data(function(row){
+                        return [{column: 'Locality', value: row.LOCALITY},
+                                {column: 'Country', value: row.COUNTRY},
+                                {column: 'Continent', value: row.CONTINENT},
+                                {column: 'Character', value: row.CHARACTER},
+                                {column: 'Line', value: row.EPLINE}, 
+                                {column: 'Context', value: row.CONTEXT}];
+                      })
+      cells.enter()
+           .append("td");
 
-      
-        
+      cells.text(function(d) {return d.value;});
+
+      cells.exit().remove();
+
+      rows.exit().remove();
+    };
 
     map.call(zoom)
   });
