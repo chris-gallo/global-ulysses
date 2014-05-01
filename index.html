@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <title> The Global Ulysses</title>
+</head>
+<style type="text/css">
+path {
+  stroke: white;
+  stroke-width: 0.25px;
+  fill: grey;
+}
+
+circle{
+  fill:red;
+  opacity: .6;
+}
+
+circle:hover {
+  fill:blue;
+}
+</style>
+<body>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script src="http://d3js.org/topojson.v0.min.js"></script>
+  <script src = "script.js"></script>
+  <div id="charDrop"></div>
+  <div id="epDrop"></div>
+  <div id="map"></div>
+  <table id = "geoInformation">
+    <thead>
+      <tr>
+        <th> Locality </th>
+        <th> Country </th>
+        <th> Continent </th>
+        <th> Character </th>
+        <th> Line </th>
+        <th> Context </th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</body>
+</html>
