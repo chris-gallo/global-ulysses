@@ -1,11 +1,19 @@
-var width = 960 ,
+// SVG DIMENSIONS
+var width = 1100 ,
     height = 500 ;
 
+
+// MAP PROJECTION
 var projection = d3.geo.mercator()
     .center([0, 0 ])
     .scale(175)
     .rotate([0,0]);
 
+// CHARACTER AND EPISODE SUBSETS
+var charSelect = d3.select("body").append("select");
+var epSelect = d3.select("body").append("select");
+
+// MAP RENDERING
 var map = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
@@ -15,22 +23,50 @@ var path = d3.geo.path()
 
 var g = map.append("g");
 
-//declare episode data
-var episodeNumbers = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
+/*
+Creates an array function 'unique' that returns
+all unique entries for Character, Episode and 
+Locality. These will be used to populate the 
+dropdowns and plot localities.
+*/
+Array.prototype.unique = function(exp){
+  var o = {}, l = [];     //o catches repeated localities and l collects the unique ones
+  for (var i = 0, j = this.length ; i < j ; i++ ){
+    switch(exp){  
+      case "character":
+        if (o.hasOwnProperty(this[i].CHARACTER)){
+          continue;
+        }
+        l.push(this[i]);
+        o[this[i].CHARACTER] = 1;
+        break;
+      case "episode":
+        if (o.hasOwnProperty(this[i].EPISODE)){
+          continue;
+        }
+        l.push(this[i]);
+        o[this[i].EPISODE] = 1;
+        break;
+      case "locality":
+        if (o.hasOwnProperty(this[i].LOCALITY) || this[i].LOCALITY === ''){
+          continue;
+        }
+        l.push(this[i]);
+        o[this[i].LOCALITY] = 1;
+        break;
+    }
+  }
+  return l;
+}
 
 
 // load and display the World
 d3.json("world-110m2.json", function(error, topology) {
 
-
-  //load in the complete data for every mention
-  //this is bad because it declares a global variable
-  d3.csv("newest.csv", function(error, data){
-    fullData = data
-  });
-
   // load and display the cities
-  d3.csv("uniquelocals.csv", function(error, data) {
+  d3.csv("newest.csv", function(error, data) {
+
+    fullData = data
 
     //set up the city scale
     var cityScale = d3.scale.linear()
@@ -38,10 +74,31 @@ d3.json("world-110m2.json", function(error, topology) {
                              d3.max(data, function(d) {return d.Locality_Count})])
                     .range([3,6]);
 
+    //declare episode data
+    var episodeNumbers = fullData.unique("episode");
+
+    var charNames = fullData.unique("character");
+
+
+    epSelect.selectAll("option")
+            .data(data.unique("episode"))
+            .enter()
+            .append("option")
+            .attr("value", function(d){return d.EPISODE})
+            .text(function(d){return d.EPISODE});
+
+    epSelect.on("change", function(){redraw(this.value);});
+
+    charSelect.selectAll("option")
+              .data(data.unique("character"))
+              .enter()
+              .append("option")
+              .text(function(d){return d.CHARACTER});
+
 
     //plot the cities
     g.selectAll("circle")
-        .data(data)
+        .data(data.unique("locality"))
         .enter()
         .append("circle")
         .attr("cx", function(d) {
@@ -54,7 +111,7 @@ d3.json("world-110m2.json", function(error, topology) {
         .attr("stroke", "black")
         .attr("shape-rendering", "auto")
         .on("click", function(d){  //update the table with info about the clicked locality
-          filterTerm = d.LOCALITY; //global variable --- BAD
+          var filterTerm = d.LOCALITY; 
           console.log(filterTerm)
           updateTable(filterTerm)
         });
@@ -64,13 +121,15 @@ d3.json("world-110m2.json", function(error, topology) {
             g.attr("transform","translate("+ 
                 d3.event.translate.join(",")+")scale("+d3.event.scale+")");
             g.selectAll("circle")
-                .data(data)
+                .data(data.unique("locality"))
                 .attr("d", path.projection(projection))
                 .attr("r", function(d){return cityScale(d.Locality_Count) / d3.event.scale})
                 .attr("stroke-width", 1/d3.event.scale);
             g.selectAll("path")  
                 .attr("d", path.projection(projection)); 
         });
+
+
 
     //function to update the table beneath the map
     var  updateTable = function(filterTerm){
@@ -88,9 +147,11 @@ d3.json("world-110m2.json", function(error, topology) {
                                 {column: 'Country', value: row.COUNTRY},
                                 {column: 'Continent', value: row.CONTINENT},
                                 {column: 'Character', value: row.CHARACTER},
-                                {column: 'Line', value: row.EPLINE}, 
+                                {column: 'Episode', value: row.EPISODE},
+                                {column: 'Line', value: row.LINE}, 
                                 {column: 'Context', value: row.CONTEXT}];
-                      })
+                      });
+
       cells.enter()
            .append("td");
 
@@ -101,7 +162,48 @@ d3.json("world-110m2.json", function(error, topology) {
       rows.exit().remove();
     };
 
-    map.call(zoom)
+    var redraw = function(ep){
+
+      console.log(ep);
+
+      // DATA FILTER
+      var infoData = fullData.filter(function(el){return el.EPISODE === ep}); //data to complete the info
+      var plotData = infoData.unique("locality"); //data to plot localities
+
+      // DATA JOIN
+      var localities = g.selectAll("circle")
+                         .data(plotData);
+
+      //ENTER DATA
+      localities.enter()
+                .append("circle")
+                .attr("cx", function(d) {
+                         return projection([d.LONGITUDE, d.LATITUDE])[0];
+                })
+                .attr("cy", function(d) {
+                         return projection([d.LONGITUDE, d.LATITUDE])[1];
+                })
+                .attr("r", function(d)  {return cityScale(d.Locality_Count)})
+                .attr("stroke", "black")
+                .attr("shape-rendering", "auto");
+
+      //UPDATE DATA
+      localities.attr("cx", function(d) {
+                         return projection([d.LONGITUDE, d.LATITUDE])[0];
+                })
+                .attr("cy", function(d) {
+                         return projection([d.LONGITUDE, d.LATITUDE])[1];
+                })
+                .attr("r", function(d)  {return cityScale(d.Locality_Count)})
+                .attr("stroke", "black")
+                .attr("shape-rendering", "auto");
+
+      //EXIT DATA
+      localities.exit().remove();
+    };
+
+    map.call(zoom);
+
   });
 
 
