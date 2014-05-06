@@ -9,9 +9,11 @@ var projection = d3.geo.mercator()
     .scale(175)
     .rotate([0,0]);
 
-// CHARACTER AND EPISODE SUBSETS
-var charSelect = d3.select("body").append("select");
-var epSelect = d3.select("body").append("select");
+// CHARACTER AND EPISODE DROPDOWNS
+var charSelect = d3.select("body").append("select")
+                   .attr("style", "charDrop");
+var epSelect = d3.select("body").append("select")
+                 .attr("style", "epDrop");
 
 // MAP RENDERING
 var map = d3.select("body").append("svg")
@@ -66,19 +68,18 @@ d3.json("world-110m2.json", function(error, topology) {
   // load and display the cities
   d3.csv("newest.csv", function(error, data) {
 
-    fullData = data
+    var dat = { 
+      full : data,
+      currentTable: data,
+      currentMap: data.unique("locality")
+      }; 
+
 
     //set up the city scale
     var cityScale = d3.scale.linear()
                     .domain([d3.min(data, function(d) {return d.Locality_Count}), 
                              d3.max(data, function(d) {return d.Locality_Count})])
                     .range([3,6]);
-
-    //declare episode data
-    var episodeNumbers = fullData.unique("episode");
-
-    var charNames = fullData.unique("character");
-
 
     epSelect.selectAll("option")
             .data(data.unique("episode"))
@@ -87,7 +88,10 @@ d3.json("world-110m2.json", function(error, topology) {
             .attr("value", function(d){return d.EPISODE})
             .text(function(d){return d.EPISODE});
 
-    epSelect.on("change", function(){redraw(this.value);});
+    epSelect.on("change", function(){
+      redraw(this.value);
+      updateDropdown(this.value);
+    });
 
     charSelect.selectAll("option")
               .data(data.unique("character"))
@@ -98,7 +102,7 @@ d3.json("world-110m2.json", function(error, topology) {
 
     //plot the cities
     g.selectAll("circle")
-        .data(data.unique("locality"))
+        .data(dat.currentMap)
         .enter()
         .append("circle")
         .attr("cx", function(d) {
@@ -121,19 +125,21 @@ d3.json("world-110m2.json", function(error, topology) {
             g.attr("transform","translate("+ 
                 d3.event.translate.join(",")+")scale("+d3.event.scale+")");
             g.selectAll("circle")
-                .data(data.unique("locality"))
+                .data(dat.currentMap)
                 .attr("d", path.projection(projection))
                 .attr("r", function(d){return cityScale(d.Locality_Count) / d3.event.scale})
                 .attr("stroke-width", 1/d3.event.scale);
             g.selectAll("path")  
                 .attr("d", path.projection(projection)); 
+
+            scalar = d3.event.scale;
         });
 
 
 
     //function to update the table beneath the map
     var  updateTable = function(filterTerm){
-      var tableData = fullData.filter(function(el){return el.LOCALITY == filterTerm;}); //this relies on filterTerm being a global variable
+      var tableData = dat.currentTable.filter(function(el){return el.LOCALITY == filterTerm;});
       
       var rows = d3.select("tbody").selectAll("tr")
                    .data(tableData);
@@ -162,44 +168,89 @@ d3.json("world-110m2.json", function(error, topology) {
       rows.exit().remove();
     };
 
+    //function to redraw localities on episode
     var redraw = function(ep){
 
-      console.log(ep);
-
       // DATA FILTER
-      var infoData = fullData.filter(function(el){return el.EPISODE === ep}); //data to complete the info
-      var plotData = infoData.unique("locality"); //data to plot localities
+      dat.currentTable = dat.full.filter(function(el){return el.EPISODE === ep}); //data to complete the info
+      dat.currentMap = dat.currentTable.unique("locality"); //data to plot localities
 
       // DATA JOIN
       var localities = g.selectAll("circle")
-                         .data(plotData);
+                         .data(dat.currentMap);
 
       //ENTER DATA
       localities.enter()
                 .append("circle")
-                .attr("cx", function(d) {
+                .attr("cx", function(d){
                          return projection([d.LONGITUDE, d.LATITUDE])[0];
                 })
-                .attr("cy", function(d) {
+                .attr("cy", function(d){
                          return projection([d.LONGITUDE, d.LATITUDE])[1];
                 })
-                .attr("r", function(d)  {return cityScale(d.Locality_Count)})
+                .attr("r", function(d){
+                  if (typeof(scalar) === "undefined"){ /*checks to see if the scalar global is defined
+                    this prevents the visualization from erroring out if the user filters before zooming*/
+                    return cityScale(d.Locality_Count);
+                  }
+                  else{
+                    return cityScale(d.Locality_Count) / scalar;
+                  }
+                })
                 .attr("stroke", "black")
+                .attr("stroke-width", function(){
+                  if (typeof(scalar) === "undefined"){
+                    return 1;
+                  }
+                  else{
+                    return 1/scalar;
+                  }
+                })
                 .attr("shape-rendering", "auto");
 
       //UPDATE DATA
-      localities.attr("cx", function(d) {
+      localities.attr("cx", function(d){
                          return projection([d.LONGITUDE, d.LATITUDE])[0];
                 })
-                .attr("cy", function(d) {
+                .attr("cy", function(d){
                          return projection([d.LONGITUDE, d.LATITUDE])[1];
                 })
-                .attr("r", function(d)  {return cityScale(d.Locality_Count)})
+                .attr("r", function(d){
+                  if (typeof(scalar) === "undefined"){ 
+                    return cityScale(d.Locality_Count);
+                  }
+                  else{
+                    return cityScale(d.Locality_Count) / scalar ;
+                  }
+                })
                 .attr("stroke", "black")
-                .attr("shape-rendering", "auto");
+                .attr("shape-rendering", "auto")
+                .on("click", function(d){  
+                  var filterTerm = d.LOCALITY; 
+                  console.log(filterTerm)
+                  updateTable(filterTerm);
+                });
 
       //EXIT DATA
       localities.exit().remove();
+    };
+
+    var updateDropdown = function(ep){
+
+      dat.currentTable = dat.full.filter(function(el){return el.EPISODE === ep});
+      var dropData = dat.currentTable.unique("character");
+
+
+      var charOptions = charSelect.selectAll("option")
+                          .data(dropData);
+
+      charOptions.enter()
+                 .append("option")
+                 .text(function(d){return d.CHARACTER});
+
+      charOptions.text(function(d){return d.CHARACTER});
+
+      charOptions.exit().remove();
     };
 
     map.call(zoom);
