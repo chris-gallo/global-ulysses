@@ -11,19 +11,23 @@ var projection = d3.geo.mercator()
 
 // CHARACTER AND EPISODE DROPDOWNS
 var charSelect = d3.select("body").append("select")
-                   .attr("style", "charDrop");
+                   .attr("id", "charDrop");
+
 var epSelect = d3.select("body").append("select")
-                 .attr("style", "epDrop");
+                 .attr("id", "epDrop");
+
+var go = d3.select("body").append("button")
+           .text("Go!");
 
 // MAP RENDERING
-var map = d3.select("body").append("svg")
+var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
 
 var path = d3.geo.path()
              .projection(projection);
 
-var g = map.append("g");
+var g = svg.append("g");
 
 /*
 Creates an array function 'unique' that returns
@@ -68,37 +72,64 @@ d3.json("world-110m2.json", function(error, topology) {
   // load and display the cities
   d3.csv("newest.csv", function(error, data) {
 
-    var dat = { 
+    dat = { 
       full : data,
       currentTable: data,
       currentMap: data.unique("locality")
-      }; 
+      };
 
+    charList = function(data){
+      var x = [];
+      for (var i = 0; i < data.length; i++){
+        x.push(data[i].CHARACTER);
+      }
+      return x.sort();
+    };
 
     //set up the city scale
     var cityScale = d3.scale.linear()
                     .domain([d3.min(data, function(d) {return d.Locality_Count}), 
                              d3.max(data, function(d) {return d.Locality_Count})])
-                    .range([3,6]);
+                    .range([3,8]);
 
-    epSelect.selectAll("option")
-            .data(data.unique("episode"))
+    d3.select("#epDrop")
+      .append("option")
+      .attr("value", null);
+
+    epSelect.selectAll(".newEpisodes")
+            .data(dat.full.unique("episode"))
             .enter()
             .append("option")
+            .attr("class", "newEpisodes")
             .attr("value", function(d){return d.EPISODE})
             .text(function(d){return d.EPISODE});
 
     epSelect.on("change", function(){
-      redraw(this.value);
       updateDropdown(this.value);
     });
 
-    charSelect.selectAll("option")
-              .data(data.unique("character"))
+    d3.select("#charDrop")
+      .append("option")
+      .attr("value", null);
+
+    charSelect.selectAll(".newCharacters")
+              .data(charList(dat.full.unique("character")))
               .enter()
               .append("option")
-              .text(function(d){return d.CHARACTER});
+              .attr("class", "newCharacters")
+              .text(function(d){return d});
 
+    go.on("click", function(){
+
+      //Collect character and episode information
+      var epElem = document.getElementById("epDrop");
+      var strEpisode = epElem.options[epElem.selectedIndex].value;
+
+      var charElem = document.getElementById("charDrop");
+      var strCharacter = charElem.options[charElem.selectedIndex].value;
+
+      redraw(strEpisode, strCharacter);
+    });
 
     //plot the cities
     g.selectAll("circle")
@@ -127,7 +158,7 @@ d3.json("world-110m2.json", function(error, topology) {
             g.selectAll("circle")
                 .data(dat.currentMap)
                 .attr("d", path.projection(projection))
-                .attr("r", function(d){return cityScale(d.Locality_Count) / d3.event.scale})
+                .attr("r", function(d){return cityScale(cityResize(d)) / d3.event.scale})
                 .attr("stroke-width", 1/d3.event.scale);
             g.selectAll("path")  
                 .attr("d", path.projection(projection)); 
@@ -139,7 +170,7 @@ d3.json("world-110m2.json", function(error, topology) {
 
     //function to update the table beneath the map
     var  updateTable = function(filterTerm){
-      var tableData = dat.currentTable.filter(function(el){return el.LOCALITY == filterTerm;});
+      var tableData = dat.currentTable.filter(function(el){return el.LOCALITY === filterTerm;});
       
       var rows = d3.select("tbody").selectAll("tr")
                    .data(tableData);
@@ -169,10 +200,20 @@ d3.json("world-110m2.json", function(error, topology) {
     };
 
     //function to redraw localities on episode
-    var redraw = function(ep){
+    var redraw = function(ep, character){
 
-      // DATA FILTER
-      dat.currentTable = dat.full.filter(function(el){return el.EPISODE === ep}); //data to complete the info
+      /* DATA FILTER
+      Filter based off selection menus. Might be a better way to do this */
+      if (!ep === true){
+        dat.currentTable = dat.full.filter(function(el){return el.CHARACTER === character});
+      }
+      else if(!character === true){
+        dat.currentTable = dat.full.filter(function(el){return el.EPISODE === ep});
+      }
+      else{
+        dat.currentTable = dat.full.filter(function(el){return el.EPISODE === ep && el.CHARACTER === character});
+      }
+      
       dat.currentMap = dat.currentTable.unique("locality"); //data to plot localities
 
       // DATA JOIN
@@ -191,10 +232,10 @@ d3.json("world-110m2.json", function(error, topology) {
                 .attr("r", function(d){
                   if (typeof(scalar) === "undefined"){ /*checks to see if the scalar global is defined
                     this prevents the visualization from erroring out if the user filters before zooming*/
-                    return cityScale(d.Locality_Count);
+                    return cityScale(cityResize(d));
                   }
                   else{
-                    return cityScale(d.Locality_Count) / scalar;
+                    return cityScale(cityResize(d)) / scalar;
                   }
                 })
                 .attr("stroke", "black")
@@ -217,10 +258,10 @@ d3.json("world-110m2.json", function(error, topology) {
                 })
                 .attr("r", function(d){
                   if (typeof(scalar) === "undefined"){ 
-                    return cityScale(d.Locality_Count);
+                    return cityScale(cityResize(d));
                   }
                   else{
-                    return cityScale(d.Locality_Count) / scalar ;
+                    return cityScale(cityResize(d)) / scalar ;
                   }
                 })
                 .attr("stroke", "black")
@@ -235,29 +276,52 @@ d3.json("world-110m2.json", function(error, topology) {
       localities.exit().remove();
     };
 
+    /*function to dynamically update dropdown menus.
+    This will solve the problem of having too many 
+    characters to filter through in the selection 
+    menus*/
     var updateDropdown = function(ep){
+      if(!ep === true){
+        charSelect.selectAll(".newCharacters")
+              .data(charList(dat.full.unique("character")))
+              .enter()
+              .append("option")
+              .attr("class", "newCharacters")
+              .text(function(d){return d});
+      }
+      else {
+        //DATA FILTER
+        dat.currentTable = dat.full.filter(function(el){return el.EPISODE === ep});
+        var dropData = dat.currentTable.unique("character");
 
-      dat.currentTable = dat.full.filter(function(el){return el.EPISODE === ep});
-      var dropData = dat.currentTable.unique("character");
+        //DATA JOIN
+        var charOptions = charSelect.selectAll(".newCharacters")
+                            .data(charList(dropData));
 
+        //ENTER
+        charOptions.enter()
+                   .append("option")
+                   .attr("class", "newCharacters")
+                   .text(function(d){return d});
 
-      var charOptions = charSelect.selectAll("option")
-                          .data(dropData);
+        //UPDATE
+        charOptions.text(function(d){return d});
 
-      charOptions.enter()
-                 .append("option")
-                 .text(function(d){return d.CHARACTER});
-
-      charOptions.text(function(d){return d.CHARACTER});
-
-      charOptions.exit().remove();
+        //EXIT
+        charOptions.exit().remove();
+      }
     };
 
-    map.call(zoom);
+    var cityResize = function(d){
+      return dat.currentTable.filter(function(el){
+        return el.LOCALITY === d.LOCALITY ;
+      })
+      .length ; 
+    };
+
+    svg.call(zoom);
 
   });
-
-
 
     g.selectAll("path")
           .data(topojson.object(topology, topology.objects.countries)
