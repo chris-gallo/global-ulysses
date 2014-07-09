@@ -4,41 +4,80 @@
   <title> The Global Ulysses</title>
 </head>
 <style type="text/css">
+svg {
+  fill: blue;
+}
 path {
   stroke: white;
   stroke-width: 0.25px;
   fill: grey;
 }
 
-circle{
+.city1{
+  fill:steelblue;
+  opacity: .6;
+}
+
+.city2{
   fill:red;
   opacity: .6;
 }
 
 circle:hover {
-  fill:blue;
+  opacity: .8;
 }
+
+.epDrop{
+  width: 60px;
+  margin: .5em;
+}
+
+.charDrop{
+  width: 150px;
+  margin: .5em;
+}
+
+button{
+  width: 60px
+  margin: .5em;
+}
+
+#sidebar {
+      position: absolute;
+        /*display: none;*/
+        top:20px; bottom:20px; right: 20px;
+        height:70%; 
+        width: 15%;
+        background-color: whitesmoke;
+        border:1px solid black;
+}
+
 </style>
 <body>
-  <script src="http://d3js.org/d3.v3.min.js"></script>
-  <script src="http://d3js.org/topojson.v0.min.js"></script>
-  <script src = "script.js"></script>
-  <div id="charDrop"></div>
-  <div id="epDrop"></div>
-  <div id="map"></div>
-  <table id = "geoInformation">
-    <thead>
-      <tr>
-        <th> Locality </th>
-        <th> Country </th>
-        <th> Continent </th>
-        <th> Character </th>
-        <th> Episode </th>
-        <th> Line </th>
-        <th> Context </th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://d3js.org/topojson.v0.min.js"></script>
+    <script src = "script.js"></script>
+    <div id="sidebar">
+        <select class = "charDrop" id = "cd1"></select>
+        <select class = "epDrop" id = "ed1"></select>
+        <button id = "go1"> Go! </button>
+        <select class = "charDrop" id = "cd2"></select>
+        <select class = "epDrop" id = "ed2"></select>
+        <button id = "go2"> Go! </button>
+    </div>
+    <table id = "geoInformation">
+        <thead>
+            <tr>
+                <th> Locality </th>
+                <th> Country </th>
+                <th> Continent </th>
+                <th> Character </th>
+                <th> Episode </th>
+                <th> Line </th>
+                <th> Context </th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 </body>
 </html>
