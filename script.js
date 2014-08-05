@@ -60,6 +60,17 @@ Array.prototype.unique = function (exp) {
     return l;
 };
 
+/* The things that should change when we zoom. */
+var zoomers = [];
+
+console.log("Setting up zoom behavior");
+var zoom = d3.behavior.zoom().on("zoom", function () {
+  console.log("Calling zoom");
+  for (var i = 0; i < zoomers.length; i++) {
+    zoomers[i]();
+  } // for
+}); // on zoom
+console.log("Done setting up zoom behavior");
 
 /* load and display the World */
 d3.json("world-110m2.json", function (error, topology) {
@@ -81,35 +92,35 @@ d3.json("world-110m2.json", function (error, topology) {
                 full : data,
                 currentTable : data,
                 currentMap : data.unique("locality")
-            },
+            };
 
                 /* sorts characters alphabetically */
-                charList = function (data) {
+            var charList = function (data) {
                     var x = [],
                         i;
                     for (i = 0; i < data.length; i++) {
                         x.push(data[i].CHARACTER);
                     }
                     return x.sort();
-                },
+                };
 
-                scalar, /* declare a scalar variable */
+            var scalar; /* declare a scalar variable */
 
                 /* set up the city scale */
-                cityScale = d3.scale.linear()
+            var cityScale = d3.scale.linear()
                 .domain([d3.min(data, function (d) {return d.Locality_Count; }),
                     d3.max(data, function (d) {return d.Locality_Count; })])
-                .range([3, 8]),
+                .range([3, 8]);
 
                 /* resize city given selection */
-                cityResize = function (d) {
+            var cityResize = function (d) {
                     return dat.currentTable.filter(function (el) {
                         return el.LOCALITY === d.LOCALITY;
                     }).length;
-                },
+                };
 
                 /* function to update the table beneath the map */
-                updateTable = function (filterTerm) {
+            var updateTable = function (filterTerm) {
                     /* DATA FILTER */
                     var tableData = dat.currentTable.filter(function (el) {return el.LOCALITY === filterTerm; });
 
@@ -141,10 +152,10 @@ d3.json("world-110m2.json", function (error, topology) {
                     cells.exit().remove();
 
                     rows.exit().remove();
-                },
+                };
 
                 /* function to redraw localities on episode and character filter */
-                redraw = function (ep, character) {
+            var redraw = function (ep, character) {
 
                     /* DATA FILTER */
                     if (ep === '' && character === '') {
@@ -169,6 +180,7 @@ d3.json("world-110m2.json", function (error, topology) {
                     /* ENTER DATA */
                     localities.enter()
                             .append("circle")
+                            .attr("r", 0)
                             .attr("class", city_class.substring(1))
                             .attr("cx", function (d) {
                                      return projection([d.LONGITUDE, d.LATITUDE])[0];
@@ -176,6 +188,8 @@ d3.json("world-110m2.json", function (error, topology) {
                             .attr("cy", function (d) {
                                      return projection([d.LONGITUDE, d.LATITUDE])[1];
                             })
+//                            .transition()
+//                            .duration(2000)
                             .attr("r", function (d) {
                                 if (typeof(scalar) === "undefined") { /*checks to see if the scalar global is defined
                                     this prevents the visualization from erroring out if the user filters before zooming*/
@@ -197,12 +211,18 @@ d3.json("world-110m2.json", function (error, topology) {
                             .attr("shape-rendering", "auto");
 
                     /* UPDATE DATA */
-                    localities.attr("cx", function (d) {
+                    localities
+//                        .transition()
+//                        .duration(1500)
+                        .attr("r", 0)
+                        .attr("cx", function (d) {
                             return projection([d.LONGITUDE, d.LATITUDE])[0];
                         })
                         .attr("cy", function (d) {
                             return projection([d.LONGITUDE, d.LATITUDE])[1];
                         })
+//                        .transition()
+//                        .duration(3000)
                         .attr("r", function (d) {
                             if (typeof(scalar) === "undefined") { 
                                 return cityScale(cityResize(d));
@@ -212,20 +232,26 @@ d3.json("world-110m2.json", function (error, topology) {
                             }
                         })
                         .attr("stroke", "black")
-                        .attr("shape-rendering", "auto")
-                        .on("click", function (d) {  
+                        .attr("shape-rendering", "auto");
+
+
+                    localities.on("click", function (d) {  
                             var filterTerm = d.LOCALITY;
                             console.log(filterTerm); 
                             updateTable(filterTerm);
                         });
 
                     /* EXIT DATA */
-                    localities.exit().remove();
-                },
+                    localities.exit()
+//                    .transition().duration(2000)
+                    .attr("r", 0)
+                    .remove();
+
+                };
 
                 /*function to dynamically update dropdown menu.
                 Helps to reduce choices in character dropdown*/
-                updateDropdown = function (ep) {
+            var updateDropdown = function (ep) {
                     if (ep === '') {
                         charSelect.selectAll(".newCharacters")
                             .data(charList(dat.full.unique("character")))
@@ -255,10 +281,12 @@ d3.json("world-110m2.json", function (error, topology) {
                         /* EXIT */
                         charOptions.exit().remove();
                     }
-                },
+                };
 
                 /* zoom, pan, and city resize */
-                zoom = d3.behavior.zoom().on("zoom", function () {
+                console.log("Pushing zoomer for", city_class);
+                zoomers.push(function() {
+                    console.log("zooming in ", city_class);
                     g.attr("transform", "translate("+ 
                         d3.event.translate.join(",")+")scale("+d3.event.scale+")");
                     g.selectAll(city_class)
@@ -271,6 +299,23 @@ d3.json("world-110m2.json", function (error, topology) {
 
                     scalar = d3.event.scale; 
                 });
+                console.log("Done");
+/*
+            var zoom = d3.behavior.zoom().on("zoom", function () {
+                    console.log("zooming in ", chardrop);
+                    g.attr("transform", "translate("+ 
+                        d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+                    g.selectAll(city_class)
+                        .data(dat.currentMap)
+                        .attr("d", path.projection(projection))
+                        .attr("r", function (d) {return cityScale(cityResize(d)) / d3.event.scale; })
+                        .attr("stroke-width", 1 / d3.event.scale);
+                    g.selectAll("path")
+                        .attr("d", path.projection(projection));
+
+                    scalar = d3.event.scale; 
+                });
+ */
 
             /* start creating the visualization here */
 
