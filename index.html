@@ -19,13 +19,16 @@ circle:hover {
   fill:blue;
 }
 </style>
-<body>
+<body onload="chart()">
   <script src="http://d3js.org/d3.v3.min.js"></script>
   <script src="http://d3js.org/topojson.v0.min.js"></script>
   <script src = "script.js"></script>
-  <div id="charDrop"></div>
-  <div id="epDrop"></div>
-  <div id="map"></div>
+  <p>
+      <div id="charDrop"></div>
+      <div id="epDrop"></div>
+      <div id="map"></div>
+  </p>
+  <p id="map"></p>
   <table id = "geoInformation">
     <thead>
       <tr>
