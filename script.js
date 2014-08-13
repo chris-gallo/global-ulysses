@@ -57,11 +57,11 @@ Array.prototype.unique = function (exp) {
             o[this[i].EPISODE] = 1;
             break;
         case "locality":
-            if (o.hasOwnProperty(this[i].LOCALITY) || this[i].LOCALITY === '') {
+            if (o.hasOwnProperty(this[i].LCC) || this[i].LCC === '') {
                 continue;
             }
             l.push(this[i]);
-            o[this[i].LOCALITY] = 1;
+            o[this[i].LCC] = 1;
             break;
         }
     }
@@ -97,22 +97,22 @@ d3.json("world-110m2.json", function (error, topology) {
             scalar, /* declare a scalar variables */
 
             /* set up the city scale */
-            cityScale = d3.scale.linear()
-            .domain([d3.min(data, function (d) {return d.Locality_Count; }),
-                d3.max(data, function (d) {return d.Locality_Count; })])
+            cityScale = d3.scale.sqrt()
+            .domain([d3.min(data, function (d) {return d.LCC_Count; }),
+                d3.max(data, function (d) {return d.LCC_Count; })])
             .range([3, 8]),
 
             /* resize city given selection */
             cityResize = function (d) {
                 return dat.currentTable.filter(function (el) {
-                    return el.LOCALITY === d.LOCALITY;
+                    return el.LCC === d.LCC;
                 }).length;
             },
 
             /* function to update the table beneath the map */
             updateTable = function (filterTerm) {
                 /* DATA FILTER */
-                var tableData = dat.currentTable.filter(function (el) {return el.LOCALITY === filterTerm; });
+                var tableData = dat.currentTable.filter(function (el) {return el.LCC === filterTerm; });
 
                 /* DATA JOIN */
                 var rows = d3.select("tbody").selectAll("tr")
@@ -214,7 +214,7 @@ d3.json("world-110m2.json", function (error, topology) {
                     .attr("stroke", "black")
                     .attr("shape-rendering", "auto")
                     .on("click", function (d) {  
-                        var filterTerm = d.LOCALITY;
+                        var filterTerm = d.LCC;
                         console.log(filterTerm); 
                         updateTable(filterTerm);
                     });
@@ -326,11 +326,11 @@ d3.json("world-110m2.json", function (error, topology) {
             .attr("cy", function (d) {
                 return projection([d.LONGITUDE, d.LATITUDE])[1];
             })
-            .attr("r", function (d) {return cityScale(d.Locality_Count); })
+            .attr("r", function (d) {return cityScale(d.LCC_Count); })
             .attr("stroke", "black")
             .attr("shape-rendering", "auto")
             .on("click", function (d) {  
-                var filterTerm = d.LOCALITY; 
+                var filterTerm = d.LCC; 
                 console.log(filterTerm);
                 updateTable(filterTerm);
             });
