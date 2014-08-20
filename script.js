@@ -1,4 +1,6 @@
-function chart(initEp = null, initChar = null){
+function chart(initEp, initChar){
+    if(typeof(initEp) === 'undefined') initEp = null;
+    if(typeof(initChar) === 'undefined') initChar = null
 
     console.log(initEp)
     console.log(initChar)
