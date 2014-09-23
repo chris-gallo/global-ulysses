@@ -52,6 +52,38 @@ button{
         border:1px solid black;
 }
 
+table.geoInformation {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table.geoInformation thead, table.geoInformation tbody {
+    float: left;
+    width: 100%;
+}
+
+table.geoInformation tbody {
+    overflow: auto;
+    height: 150px;
+}
+
+table.geoInformation tr {
+    width: 100%;
+    display: table;
+    text-align: left;
+}
+
+table.geoInformation tr:hover > td{
+    background: whitesmoke;    
+    border: 1px solid #2a2a2a
+}
+
+table.geoInformation th, table.geoInformation td {
+    width: 10%;
+    border: 1px solid whitesmoke;
+}
+
 </style>
 <body>
     <script src="http://d3js.org/d3.v3.min.js"></script>
@@ -65,7 +97,7 @@ button{
         <select class = "epDrop" id = "ed2"></select>
         <button id = "go2"> Go! </button>
     </div>
-    <table id = "geoInformation">
+    <table class = "geoInformation">
         <thead>
             <tr>
                 <th> Locality </th>
