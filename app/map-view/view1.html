@@ -1,0 +1,43 @@
+<div ng-controller="View1Ctrl">
+    <select ng-model="filter.episode_chr" ng-options="locality.episode_chr as locality.episode for locality in episodes" ng-change="clearEpisode(filter.episode_chr)">
+        <option value="">-- choose episode --</option>
+    </select>
+    <select ng-model="filter.character" ng-options="locality.character as locality.character for locality in characters" ng-change="clearCharacter()">
+        <option value="">-- choose character --</option>
+    </select>
+</div>
+<div ng-controller="MapCtrl">
+    <locality-map data="data | filter: {episode_chr: filter.episode_chr, character: filter.character}" fullData="data"></locality-map>
+</div>
+<div ng-controller="TableCtrl">
+    <p><strong>Page:</strong> {{tableParams.page()}}
+    <p><strong>Count per page:</strong> {{tableParams.count()}}
+    <table ng-table="tableParams" show-filter="false" class="table">
+        <tr ng-repeat="locality in $data"> 
+            <td data-title="'Locality'">{{ locality.locality }}</td>
+            <td data-title="'Country'">{{ locality.country }}</td>
+            <td data-title="'Continent'">{{ locality.continent }}</td>
+            <td data-title="'Character'">{{ locality.character }}</td>
+            <td data-title="'Line'">{{ locality.epline}}</td>
+            <td data-title="'Context'">{{ locality.context }}</td>
+        </tr>
+    </table>
+    <script type="text/ng-template" id="custom/pager">
+        <ul class="pager ng-cloak">
+          <li ng-repeat="page in pages"
+                ng-class="{'disabled': !page.active, 'previous': page.type == 'prev', 'next': page.type == 'next'}"
+                ng-show="page.type == 'prev' || page.type == 'next'" ng-switch="page.type">
+            <a ng-switch-when="prev" ng-click="params.page(page.number)" href="">&laquo; Previous</a>
+            <a ng-switch-when="next" ng-click="params.page(page.number)" href="">Next &raquo;</a>
+          </li>
+            <li> 
+            <div class="btn-group">
+                <button type="button" ng-class="{'active':params.count() === 10}" ng-click="params.count(10)" class="btn btn-default">10</button>
+                <button type="button" ng-class="{'active':params.count() === 25}" ng-click="params.count(25)" class="btn btn-default">25</button>
+                <button type="button" ng-class="{'active':params.count() === 50}" ng-click="params.count(50)" class="btn btn-default">50</button>
+                <button type="button" ng-class="{'active':params.count() === 100}" ng-click="params.count(100)" class="btn btn-default">100</button>
+            </div>
+            </li>
+        </ul>
+    </script>
+</div>
