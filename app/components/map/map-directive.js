@@ -46,22 +46,27 @@
                 var cityScale = d3.scale.linear()
                     .domain([1, 30])
                     .range([3,8]);
+
+                // The things that should change when we zoom
+                var zoomers = [];
                 
                 // zoom, pan, and city resize
                 var zoom = d3.behavior.zoom()
                     .scaleExtent([.7, 20])
                     .on("zoom",function() {
-                        g.attr("transform","translate("+ 
-                            d3.event.translate.join(",")+")scale("+d3.event.scale+")");
-                        g.selectAll("circle")
-                            .attr("d", path.projection(projection))
-                            .attr("r", function(d) {return cityScale(d.locality_count) / d3.event.scale })
-                            .attr("stroke-width", 1 / d3.event.scale)
-                        g.selectAll("path")  
-                            .attr("d", path.projection(projection)); 
-
-                        scalar = d3.event.scale;
+                        for (var i = 0; i < zoomers.length; i++) {
+                            zoomers[i]();
+                        }
                     });
+
+                // push the country outlines to change on zoom
+                // this should be independent of $watch
+                zoomers.push(function() {
+                    g.attr("transform","translate("+ 
+                        d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+                    g.selectAll("path")  
+                        .attr("d", path.projection(projection)); 
+                });
 
                 var cityResize = function(d, data){
                   return data.filter(function(el){
@@ -74,6 +79,18 @@
                     if(!data){ return; }
 
                     var sizeData = data;
+                    
+                    // push the cities to change on zoom--depends on current data
+                    zoomers.push(function() {
+                        g.selectAll("circle")
+                            .attr("d", path.projection(projection))
+                            .attr("r", function(d) {return cityScale(cityResize(d, sizeData)) / d3.event.scale })
+                            .attr("stroke-width", 1 / d3.event.scale)
+
+                        scalar = d3.event.scale;
+                    });
+                    
+
 
                     // TODO make this remove as a transition
                     g.selectAll('circle')
