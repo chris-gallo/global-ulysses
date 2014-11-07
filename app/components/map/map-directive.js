@@ -26,13 +26,14 @@
                 var path = d3.geo.path()
                      .projection(projection);
 
-                var g = svg.append("g");
+                var baseLayer = svg.append("g");
+                var cityLayer = svg.append("g");
 
                 var scalar; // Create a scalar variable for on-zoom resize
 
                 // TODO feed json from an attribute
                 d3.json("components/lib/world-110m2.json", function(error, topology) {
-                    g.selectAll("path")
+                    baseLayer.selectAll("path")
                           .data(topojson.object(topology, topology.objects.countries)
                               .geometries)
                         .enter()
@@ -62,9 +63,11 @@
                 // push the country outlines to change on zoom
                 // this should be independent of $watch
                 zoomers.push(function() {
-                    g.attr("transform","translate("+ 
+                    cityLayer.attr("transform","translate("+ 
                         d3.event.translate.join(",")+")scale("+d3.event.scale+")");
-                    g.selectAll("path")  
+                    baseLayer.attr("transform","translate("+ 
+                        d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+                    baseLayer.selectAll("path")  
                         .attr("d", path.projection(projection)); 
                 });
 
@@ -82,7 +85,7 @@
                     
                     // push the cities to change on zoom--depends on current data
                     zoomers.push(function() {
-                        g.selectAll("circle")
+                        cityLayer.selectAll("circle")
                             .attr("d", path.projection(projection))
                             .attr("r", function(d) {return cityScale(cityResize(d, sizeData)) / d3.event.scale })
                             .attr("stroke-width", 1 / d3.event.scale)
@@ -93,11 +96,11 @@
 
 
                     // TODO make this remove as a transition
-                    g.selectAll('circle')
+                    cityLayer.selectAll('circle')
                         .remove();
 
                     //plot the cities
-                    g.selectAll("circle")
+                    cityLayer.selectAll("circle")
                         .data(uniqueLocality(data))
                         .enter()
                         .append("circle")
