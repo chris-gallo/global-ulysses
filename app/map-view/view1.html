@@ -18,7 +18,7 @@
             <td data-title="'Country'">{{ locality.country }}</td>
             <td data-title="'Continent'">{{ locality.continent }}</td>
             <td data-title="'Character'">{{ locality.character }}</td>
-            <td data-title="'Line'">{{ locality.epline}}</td>
+            <td data-title="'Line'">{{ locality.epline | number: 4}}</td>
             <td data-title="'Context'">{{ locality.context }}</td>
         </tr>
     </table>
