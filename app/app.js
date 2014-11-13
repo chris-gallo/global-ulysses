@@ -12,6 +12,6 @@ config(['$routeProvider', function($routeProvider) {
 }]);
 
 angular.module('d3', []);
-angular.module('LocalityService', ['ngResource']);
+angular.module('LocalityService', []);
 angular.module('myApp.map', ['d3', 'LocalityService', 'uniqueLocalityFilter']);
 angular.module('myApp.table', ['LocalityService', 'ngTable']);
