@@ -26,8 +26,16 @@
                 var path = d3.geo.path()
                      .projection(projection);
 
+                var backdrop = svg.append("g");
                 var baseLayer = svg.append("g");
                 var cityLayer = svg.append("g");
+
+                backdrop.append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", width)
+                    .attr("height", height)
+                    .attr("fill", "#ecf0f1");
 
                 var scalar; // Create a scalar variable for on-zoom resize
 
@@ -39,7 +47,7 @@
                         .enter()
                           .append("path")
                           .attr("d", path)
-                          .style("fill", "grey");
+                          .style("fill", "#7f8c8d");
                 });
 
                 //set up the city scale
@@ -68,7 +76,10 @@
                     baseLayer.attr("transform","translate("+ 
                         d3.event.translate.join(",")+")scale("+d3.event.scale+")");
                     baseLayer.selectAll("path")  
-                        .attr("d", path.projection(projection)); 
+                        .attr("d", path.projection(projection))
+                        .attr("stroke-width", function() {
+                            return .25 / d3.event.scale;
+                        }); 
                 });
 
                 var cityResize = function(d, data){
@@ -106,7 +117,7 @@
                         .append("circle")
                         .attr("r", 0)
                         .attr("class", "city")
-                        .style("fill", "red")
+                        .style("fill", "#2980b9")
                         .transition()
                         .attr("cx", function(d) {
                             return projection([d.longitude, d.latitude])[0];
