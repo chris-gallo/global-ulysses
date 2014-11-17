@@ -11,13 +11,13 @@
                     height = 500;
 
 
-                // MAP PROJECTION
+                // Map projection
                 var projection = d3.geo.mercator()
                     .center([0, 0])
                     .scale(175)
                     .rotate([20,0]);
 
-                // MAP RENDERING
+                // Map rendering
                 var svg = d3.select(element[0]).append("svg")
                     .attr("width", width)
                     .attr("height", height)
@@ -29,13 +29,28 @@
                 var backdrop = svg.append("g");
                 var baseLayer = svg.append("g");
                 var cityLayer = svg.append("g");
+                var legend = svg.append("g");
 
                 backdrop.append("rect")
                     .attr("x", 0)
                     .attr("y", 0)
                     .attr("width", width)
                     .attr("height", height)
-                    .attr("fill", "#ecf0f1");
+                    .attr("fill", "#ecf0f1")
+                    .attr("stroke-width", 1)
+                    .attr("stroke", "black");
+
+                var legendWidth = 150, 
+                    legendHeight = 90,
+                    legendMargin = 5;
+
+                legend.append("rect")
+                    .attr("x", width - legendWidth)
+                    .attr("y", 0)
+                    .attr("width", legendWidth)
+                    .attr("height", legendHeight)
+                    .attr("fill", "#34495e")
+                    .attr("opacity", .8);
 
                 var scalar; // Create a scalar variable for on-zoom resize
 
@@ -52,21 +67,56 @@
 
                 //set up the city scale
                 // TODO Make domain responsive to data
-                var cityScale = d3.scale.linear()
-                    .domain([1, 30])
-                    .range([3,8]);
+                var cityScale = d3.scale.sqrt()
+                    .domain([1, 233])
+                    .range([3,28]);
 
                 // The things that should change when we zoom
                 var zoomers = [];
                 
                 // zoom, pan, and city resize
                 var zoom = d3.behavior.zoom()
-                    .scaleExtent([.7, 20])
+                    .scaleExtent([.7, 60])
                     .on("zoom",function() {
                         for (var i = 0; i < zoomers.length; i++) {
                             zoomers[i]();
                         }
                     });
+
+                legend.selectAll("circle")
+                    .data([230, 70, 10])
+                    .enter()
+                    .append("circle")
+                    .attr("cx", function(d, i){
+                        return ( width - (legendWidth/3) * i ) - 30;
+                    })
+                    .attr("cy", function(d) {
+                        return (legendHeight / 2);
+                    })
+                    .attr("r", function(d) {
+                        return cityScale(d);    
+                    })
+                    .attr("fill", "#2980b9")
+                    .attr("stroke", "black")
+                    .attr("stroke-width", "1px");
+                
+                legend.selectAll("text")
+                    .data([230, 70, 10])
+                    .enter()
+                    .append("text")
+                    .attr("x", function(d, i){
+                        return (width - (legendWidth/3) * i) - 30;
+                    })
+                    .attr("y", function(d) {
+                        return legendHeight - legendMargin;
+                    })
+                    .attr("text-anchor", "middle")
+                    .attr("fill", "white")
+                    .text(function(d) {
+                        return String(d);
+                    });
+
+
 
                 // push the country outlines to change on zoom
                 // this should be independent of $watch
@@ -76,15 +126,12 @@
                     baseLayer.attr("transform","translate("+ 
                         d3.event.translate.join(",")+")scale("+d3.event.scale+")");
                     baseLayer.selectAll("path")  
-                        .attr("d", path.projection(projection))
-                        .attr("stroke-width", function() {
-                            return .25 / d3.event.scale;
-                        }); 
+                        .attr("d", path.projection(projection)); 
                 });
 
                 var cityResize = function(d, data){
-                  return data.filter(function(el){
-                    return el.latitude === d.latitude ;
+                    return data.filter(function(el){
+                        return el.latitude === d.latitude && el.longitude === d.longitude;
                   })
                   .length ; 
                 };
@@ -98,7 +145,9 @@
                     zoomers.push(function() {
                         cityLayer.selectAll("circle")
                             .attr("d", path.projection(projection))
-                            .attr("r", function(d) {return cityScale(cityResize(d, sizeData)) / d3.event.scale })
+                            .attr("r", function(d) {
+                                return cityScale(cityResize(d, sizeData)) / d3.event.scale 
+                            })
                             .attr("stroke-width", 1 / d3.event.scale)
 
                         scalar = d3.event.scale;
@@ -130,6 +179,7 @@
                             if (typeof(scalar) === "undefined") { 
                                 return cityScale(cityResize(d, sizeData));
                             // Resize correctly if already zoomed in
+                            // TODO unnecessary since it's updated on zoom not on first redraw
                             } else {
                                 return cityScale(cityResize(d, sizeData)) / scalar;
                             }
@@ -148,15 +198,12 @@
                         svg.call(zoom);
                     
                     }, true); //scope.$watch for data
-                
-
             } //link
 
             return {
                 restrict: 'EA', 
                 scope: {
                     data: '&',
-                    fullData: '@'
                 }, 
                 link: link
             }

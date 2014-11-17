@@ -1,7 +1,6 @@
 (function() {
     'use strict';
 
-    // TODO filter by latitude and longitude
     angular.module('uniqueLocalityFilter', [])
         .filter('uniqueLocality', function() {
             return function(input) {
@@ -10,11 +9,11 @@
                     seenLocalities = {};
 
                 for (var i = 0; i < input.length; i++) {
-                    if (seenLocalities.hasOwnProperty(input[i].latitude)){
+                    if (seenLocalities.hasOwnProperty(String(input[i].latitude)+ "," + String(input[i].longitude))){
                         continue;
                     } 
                     output.push(input[i]);
-                    seenLocalities[input[i].latitude] = 1;
+                    seenLocalities[String(input[i].latitude)+ "," + String(input[i].longitude)] = 1;
                 }
 
                 return output;
