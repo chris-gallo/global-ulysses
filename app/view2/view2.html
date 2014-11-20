@@ -1,2 +1,8 @@
 <p>This is the partial for view 2.</p>
 <p>This is the end of the partial view</p>
+<div ng-controller="View2Ctrl">
+    <input type="text" ng-model="data">
+    <p>{{ data }}</p>
+    <test data="data" filter="filter"></test>
+
+</div>

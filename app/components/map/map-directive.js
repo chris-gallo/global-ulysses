@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('myApp.map')
-        .directive('localityMap', ['d3', 'topojson', 'uniqueLocalityFilter', function(d3, topojson, uniqueLocality) {
+        .directive('localityMap', ['$filter', 'd3', 'topojson', 'uniqueLocalityFilter', function($filter, d3, topojson, uniqueLocality) {
             
             function link(scope, element, attrs) {
 
@@ -76,7 +76,7 @@
                 
                 // zoom, pan, and city resize
                 var zoom = d3.behavior.zoom()
-                    .scaleExtent([.7, 60])
+                    .scaleExtent([1, 60])
                     .on("zoom",function() {
                         for (var i = 0; i < zoomers.length; i++) {
                             zoomers[i]();
@@ -136,17 +136,20 @@
                   .length ; 
                 };
 
-                scope.$watch('data()', function(data) {
-                    if(!data){ return; }
+                // As of angular 1.3.1, watchGroup doesn't support deep watching 
+                // in $watchGroup, so we have to settle for this solution. 
+                scope.$watchGroup(['datafilter.episode_chr','datafilter.character', 'data'], function(newVal, oldVal) {
+                    // Make sure the data is present
+                    if(!newVal[2]){ return; }
 
-                    var sizeData = data;
+                    var data = $filter('filter')(scope.data, scope.datafilter)
                     
                     // push the cities to change on zoom--depends on current data
                     zoomers.push(function() {
                         cityLayer.selectAll("circle")
                             .attr("d", path.projection(projection))
                             .attr("r", function(d) {
-                                return cityScale(cityResize(d, sizeData)) / d3.event.scale 
+                                return cityScale(cityResize(d, data)) / d3.event.scale 
                             })
                             .attr("stroke-width", 1 / d3.event.scale)
 
@@ -177,11 +180,11 @@
                         .attr("r", function(d){
                             // Make sure we have or have not zoomed in yet
                             if (typeof(scalar) === "undefined") { 
-                                return cityScale(cityResize(d, sizeData));
+                                return cityScale(cityResize(d, data));
                             // Resize correctly if already zoomed in
                             // TODO unnecessary since it's updated on zoom not on first redraw
                             } else {
-                                return cityScale(cityResize(d, sizeData)) / scalar;
+                                return cityScale(cityResize(d, data)) / scalar;
                             }
                         })
                         .attr("stroke", "black")
@@ -197,13 +200,15 @@
 
                         svg.call(zoom);
                     
-                    }, true); //scope.$watch for data
+                    }); //scope.$watch for data
             } //link
 
             return {
                 restrict: 'EA', 
                 scope: {
-                    data: '&',
+                    data: '=',
+                    datafilter: '=',
+                    test: '='
                 }, 
                 link: link
             }

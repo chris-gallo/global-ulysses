@@ -9,6 +9,23 @@ angular.module('myApp.view2', ['ngRoute', 'myApp.map'])
   });
 }])
 
-.controller('View2Ctrl', [function() {
+.controller('View2Ctrl', ['$scope', function($scope) {
+    $scope.data = 'red';
+    $scope.filter = {foo: "", bar: ""};
+}])
 
+.directive('test', [function() {
+    return {
+        restrict: 'EA',
+        scope: {
+            data: '=',
+            filter: '=', 
+        },
+        link: function(scope, element, attrs) {
+            scope.$watchGroup(['data', 'filter' ], function(data) {
+                console.log("data changed!");
+            })
+        }
+    }
 }]);
+

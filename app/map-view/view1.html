@@ -7,7 +7,7 @@
     </select>
 </div>
 <div ng-controller="MapCtrl">
-    <locality-map data="data | filter: {episode_chr: filter.episode_chr, character: filter.character}"></locality-map>
+    <locality-map data="data" datafilter="filter"></locality-map>
 </div>
 <div ng-controller="TableCtrl">
     <p><strong>Page:</strong> {{tableParams.page()}}
