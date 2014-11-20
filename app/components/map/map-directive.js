@@ -30,6 +30,10 @@
                 var baseLayer = svg.append("g");
                 var cityLayer = svg.append("g");
                 var legend = svg.append("g");
+                var tooltip = d3.select("body")
+                    .append("div")
+                    .attr("class", "tooltip")
+                    .text("a simple tooltip");
 
                 backdrop.append("rect")
                     .attr("x", 0)
@@ -170,7 +174,22 @@
                         .attr("r", 0)
                         .attr("class", "city")
                         .style("fill", "#2980b9")
+                        .on("mouseover", function(d) {
+                            tooltip.transition()
+                                .duration(500)
+                                .style("opacity", .9);
+                            tooltip.html(d.locality)
+                                .style("left", (d3.event.pageX) + "px")
+                                .style("top", (d3.event.pageY - 28) + "px");
+                        })
+                        .on("mouseout", function() {
+                            console.log("moused out");
+                            tooltip.transition()
+                                .duration(500)
+                                .style("opacity", 0);
+                        })
                         .transition()
+                        .duration(500)
                         .attr("cx", function(d) {
                             return projection([d.longitude, d.latitude])[0];
                         })
@@ -182,7 +201,6 @@
                             if (typeof(scalar) === "undefined") { 
                                 return cityScale(cityResize(d, data));
                             // Resize correctly if already zoomed in
-                            // TODO unnecessary since it's updated on zoom not on first redraw
                             } else {
                                 return cityScale(cityResize(d, data)) / scalar;
                             }
@@ -198,9 +216,9 @@
                         .attr("shape-rendering", "auto")
                         .attr("opacity", ".7");
 
-                        svg.call(zoom);
+                    svg.call(zoom);
                     
-                    }); //scope.$watch for data
+                }); //scope.$watch for data
             } //link
 
             return {

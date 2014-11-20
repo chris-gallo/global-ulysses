@@ -1,5 +1,5 @@
 <div ng-controller="View1Ctrl">
-    <select ng-model="filter.episode_chr" ng-options="locality.episode_chr as locality.episode for locality in episodes" ng-change="clearEpisode(filter.episode_chr)">
+    <select ng-model="filter.episode_chr" ng-options="locality.episode_chr as locality.episode for locality in episodes" ng-change="clearEpisode()">
         <option value="">-- choose episode --</option>
     </select>
     <select ng-model="filter.character" ng-options="locality.character as locality.character for locality in characters" ng-change="clearCharacter()">
@@ -9,9 +9,7 @@
 <div ng-controller="MapCtrl">
     <locality-map data="data" datafilter="filter"></locality-map>
 </div>
-<div ng-controller="TableCtrl">
-    <p><strong>Page:</strong> {{tableParams.page()}}
-    <p><strong>Count per page:</strong> {{tableParams.count()}}
+<div ng-controller="TableCtrl" class="table-container">
     <table ng-table="tableParams" show-filter="false" class="table">
         <tr ng-repeat="locality in $data"> 
             <td data-title="'Locality'">{{ locality.locality }}</td>
